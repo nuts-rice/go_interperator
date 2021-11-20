@@ -48,16 +48,15 @@ func (l *Lexer) NextToken() token.Token {
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
 		} else if isDigit(l.ch) {
-			tok.Type = token.INT
 			tok.Literal = l.readNumber()
+			tok.Type = token.INT
 			return tok
 		} else {
 			//Don't know how to handle current ch and declar it illegal
 			tok = newToken(token.ILLEGAL, l.ch)
 		}
-		l.readChar()
-		return tok
 	}
+	l.readChar()
 	return tok
 }
 
