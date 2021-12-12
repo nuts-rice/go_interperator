@@ -1,3 +1,3 @@
-module go_interperator.go_interperator
+module github.com/nuts-rice/go_interperator.git
 
 go 1.13
