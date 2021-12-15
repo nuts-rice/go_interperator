@@ -3,16 +3,22 @@ import (
 	"../ast"
 	"../lexer"
 	"../token"
+	"fmt"
 )
 
 type Parser struct {
 	l *lexer.Lexer
 	curToken token.Token
+	//error handling in array
+	errors []string
 	peekToken token.Token
 }
 
 func New(l *lexer.Lexer) *Parser {
-	p := &Parser{l : l}
+	p := &Parser{
+		l : l,
+		errors: []string{},
+	}
 
 	p.nextToken()
 	p.nextToken()
@@ -76,11 +82,23 @@ func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
+func (p *Parser) Errors() []string {
+	return p.errors
+}
+
+func (p *Parser) peekError(t token.TokenType) {
+	msg := fmt.Sprintf("expected next token to be %s, got %s instead",
+		t, p.peekToken.Type)
+	p.errors = append(p.errors, msg)
+}
+//Assertion pattern shared with most parsers
+////Enforce correctn4ess of the order of tokens by checking type of next token
 func (p *Parser) expectPeek(t token.TokenType) bool {
 	if p.peekTokenIs(t) {
 		p.nextToken()
 		return true
 	} else {
+		p.peekError(t)
 		return false
 	}
 }
