@@ -6,6 +6,20 @@ import (
 	"fmt"
 )
 
+//order and relation to othner numbers matter here
+const(
+	_ int = iota //incrementing numbers
+	LOWEST
+	EQUALS
+	LESSGREATER
+	SUM
+	PRODUCT
+	PREFIX
+	CALL
+)
+
+
+
 type Parser struct {
 	l *lexer.Lexer
 	curToken token.Token
@@ -17,6 +31,11 @@ type Parser struct {
 	infixParseFns map[token.TokenType]infixParseFn	//maps left side of the operator being parsed
 }
 
+type(
+	prefixParseFn func() ast.Expression
+	infixParseFn func(ast.Expression) ast.Expression
+	)
+
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l : l,
@@ -25,6 +44,8 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
 
 	return p
 }
@@ -56,7 +77,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -89,6 +110,33 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	}
 
 	return stmt
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
+}
+
+//build AST node then fill field by calling other parsing fns
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON){
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
